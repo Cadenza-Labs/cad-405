@@ -1,0 +1,8 @@
+[core]
+    remote = origin
+    autostage = true
+['remote "origin"']
+    url = gdrive://1fhk9xQZW42B8YipIRCe2rfthNXJkmhr7
+    gdrive_acknowledge_abuse = true
+    gdrive_client_id = 336830125929-s4vmlp8tb32qasbf01hjtgn2m8s96265.apps.googleusercontent.com
+    gdrive_client_secret = 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

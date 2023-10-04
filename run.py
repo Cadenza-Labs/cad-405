@@ -1,21 +1,27 @@
+import typer
+import os
 import itertools
 from pathlib import Path
 from rich import print
 import subprocess
 
 models = ["EleutherAI/gpt-j-6b", "gpt2-xl", "meta-llama/Llama-2-13b-hf"]
+models = ["EleutherAI/gpt-j-6b"]
 model_short = ["gj6", "gxl", "l13"]
+model_short = ["gj6"]
 
 model_to_shortcode = dict(zip(models, model_short))
 datasets = ["imdb", "amazon_polarity"]
 
 losses = [" --loss prompt_var", ""]
 variant_nums = [2,4,8,-1]
+variant_nums = [-1]
 variants = [f" --num_variants {v}" for v in variant_nums]
 
 combos = itertools.product(losses, models, datasets, variants)
+print(list(combos))
 
-def submit_jobs():
+def submit_jobs(outs_path):
     for loss, model, dataset, variant in combos:
         short_model = model_to_shortcode[model]
         short_ds = dataset[0]
@@ -26,10 +32,10 @@ def submit_jobs():
 #SBATCH --gpus-per-node=2
 #SBATCH --time=2-0
 #SBATCH --partition=single
-#SBATCH --job-name=32{short_loss}{short_model}{short_ds}"""
+#SBATCH --job-name={short_loss}{short_model}{short_ds}"""
         script = f"""{preamble}
 
-{command}
+{command} --norm burns
 """
         # get variant num from  --num_variants {v}
         v = variant[16:]
@@ -37,16 +43,22 @@ def submit_jobs():
         # towrite = Path(f"sbatchs/{short_model}{short_ds}{short_loss}{v}.sbatch")
         # with open(towrite, "w") as f:
         #         f.write(script)
+
+        # get cwd
+        origin = Path.cwd()
+        outs_path.mkdir(exist_ok=True, parents=True)
+        os.chdir(outs_path)
         subprocess.run(["sbatch"], input=script, encoding="utf-8")
+        os.chdir(origin)
 
 import re
 from pathlib import Path      
   
-def get_all_sweep_paths():
+def get_all_sweep_paths(outs_path: Path):
     paths = []
 
     # get all files in this directory with slurm in the name
-    files = list(Path('./outs').glob('slurm*.out'))
+    files = list(outs_path.glob('slurm*.out'))
     print(f"len(files): {len(files)}")
     # Open the file and read each line
     for filename in files:
@@ -77,6 +89,11 @@ def copy_with_no_reporters(paths, write_dir_path):
 
 
 if __name__ == "__main__":
-    submit_jobs()
-    paths = get_all_sweep_paths()
-    copy_with_no_reporters(paths, Path("./no_reporters_32"))
+    def main():
+        outs_path = Path("./data/expt2/outs")
+        submit_jobs(outs_path)
+        processed_data_path = Path("./data/expt2/no_reporters_expt2")
+        # paths = get_all_sweep_paths(outs_path)
+        # copy_with_no_reporters(paths, processed_data_path)
+
+    typer.run(main)
