@@ -65,12 +65,13 @@ for i, sweep_path in enumerate(sweep_paths):
     with open(cfg_path, 'r') as cfg_file:
         cfg = yaml.safe_load(cfg_file)
         model = cfg['data']['model']
+        loss = cfg['net']['loss']
     
     # Plot
     axs[i].plot(partial_df['layer'], partial_df['auroc_estimate'], marker='o', linestyle='-')
     axs[i].set_xlabel('Layer')
     axs[i].set_ylabel('AUROC Estimate')
-    axs[i].set_title(f"model: {model}, dataset: {dataset}, ensembling=partial")
+    axs[i].set_title(f"model: {model}, dataset: {dataset}, loss={loss}, ens=partial")
     axs[i].grid(True)
 
 plt.tight_layout()
