@@ -13,20 +13,19 @@ model_short = ["gj6"]
 model_to_shortcode = dict(zip(models, model_short))
 datasets = ["imdb", "amazon_polarity"]
 
-losses = [" --loss prompt_var", ""]
+losses = [" --loss ccs_prompt_var", ""]
 variant_nums = [2,4,8,-1]
 variant_nums = [-1]
 variants = [f" --num_variants {v}" for v in variant_nums]
 
 combos = itertools.product(losses, models, datasets, variants)
-print(list(combos))
 
 def submit_jobs(outs_path):
     for loss, model, dataset, variant in combos:
         short_model = model_to_shortcode[model]
         short_ds = dataset[0]
         short_loss = "pv" if loss else ""
-        command = f"elk elicit {model} {dataset}{loss}{variant}"
+        command = f"elk elicit {model} {dataset}{loss}{variant} --net ccs --norm burns"
         preamble = f"""#!/bin/bash
 #SBATCH --nodes=1
 #SBATCH --gpus-per-node=2
@@ -35,7 +34,7 @@ def submit_jobs(outs_path):
 #SBATCH --job-name={short_loss}{short_model}{short_ds}"""
         script = f"""{preamble}
 
-{command} --norm burns
+{command}
 """
         # get variant num from  --num_variants {v}
         v = variant[16:]
@@ -65,7 +64,8 @@ def get_all_sweep_paths(outs_path: Path):
         file = open(filename, 'r')
         for line in file:
             # Use Regex to find the path
-            match = re.search(r'Saving results to (.*$)', line)
+            # match = re.search(r'Saving results to (.*$)', line)
+            match = re.search(r'Output directory at (.*$)', line)
             if match is not None:
                 # if a match is found, convert the path string to pathlib object and add to list
                 paths.append(Path(match.group(1)))
@@ -90,10 +90,10 @@ def copy_with_no_reporters(paths, write_dir_path):
 
 if __name__ == "__main__":
     def main():
-        outs_path = Path("./data/expt2/outs")
-        submit_jobs(outs_path)
-        processed_data_path = Path("./data/expt2/no_reporters_expt2")
-        # paths = get_all_sweep_paths(outs_path)
-        # copy_with_no_reporters(paths, processed_data_path)
+        outs_path = Path("./data/expt_2/outs")
+        # submit_jobs(outs_path)
+        processed_data_path = Path("./data/expt_2/no_reporters_expt_2")
+        paths = get_all_sweep_paths(outs_path)
+        copy_with_no_reporters(paths, processed_data_path)
 
     typer.run(main)
